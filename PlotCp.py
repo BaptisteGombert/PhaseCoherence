@@ -37,7 +37,7 @@ def readresults(NTEMPLATE,paf,NHOURS=550,buff=20,form=None):
     return dates,Cps,Cpc
 
 # ----------------------------------------------------------------------------------------------
-def readH5results(NTEMPLATE,paf,days='all',dtime=True,buff=0,mode='normal'):
+def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mode='normal'):
 
     '''
     Read phase coherence results in paf stored in h5py files
@@ -93,17 +93,25 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,buff=0,mode='normal'):
         keys = [s for s in list(f.keys()) if 'T{:03d}'.format(NTEMPLATE) in s]
         if len(keys[0].split('.'))==2: # If only one point per template and per hour
             for k in keys: # For each hour
-                # Get time
-                time = f[k]['Time'].value[buff:] 
+                if postbuff is not None: 
+                    # Get time
+                    time = f[k]['Time'].value[prebuff:-postbuff] 
+                else:
+                    time = f[k]['Time'].value[prebuff:] 
+        
                 if dtime:
                     d = [datetime.fromtimestamp(t-3600.) for t in time]
                 else:
                     d = np.array(time-3600.)
                 dates = np.append(dates,d)
             
-                # Get phase coheremce            
-                Cps.append(f[k]['CpS'].value[buff:]) #= np.append(Cps,f[k]['CpS'].value[buff:])
-                Cpc.append(f[k]['CpC'].value[buff:]) #= np.append(Cpc,f[k]['CpC'].value[buff:])
+                # Get phase coheremce           
+                if postbuff is not None: 
+                    Cps.append(f[k]['CpS'].value[prebuff:-postbuff]) #= np.append(Cps,f[k]['CpS'].value[buff:])
+                    Cpc.append(f[k]['CpC'].value[prebuff:-postbuff]) #= np.append(Cpc,f[k]['CpC'].value[buff:])
+                else:
+                    Cps.append(f[k]['CpS'].value[prebuff:]) 
+                    Cpc.append(f[k]['CpC'].value[prebuff:]) 
 
 
         elif len(keys[0].split('.'))==3: # If on interp mode: H{}.T{}.P{}
@@ -112,23 +120,35 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,buff=0,mode='normal'):
             for h in hours:
                 # list of points for 1 hour and 1 template
                 keys2 = [s for s in list(keys) if 'H{:02d}'.format(h) in s] 
-                # Get phase coheremce           
-                c1 =  np.array([f[k2]['CpS'].value[buff:] for k2 in keys2]).T
-                c2 =  np.array([f[k2]['CpC'].value[buff:] for k2 in keys2]).T
+                # Get phase coheremce          
+                if postbuff is not None:                  
+                    c1 =  np.array([f[k2]['CpS'].value[prebuff:-postbuff] for k2 in keys2]).T
+                    c2 =  np.array([f[k2]['CpC'].value[prebuff:-postbuff] for k2 in keys2]).T
+                else:
+                    c1 =  np.array([f[k2]['CpS'].value[prebuff:] for k2 in keys2]).T
+                    c2 =  np.array([f[k2]['CpC'].value[prebuff:] for k2 in keys2]).T
+
                 # Get size
                 snew=Cps.shape[0]+len(c1)
                 Cps = np.append(Cps,c1).reshape(snew,c1.shape[1])
                 Cpc = np.append(Cpc,c2).reshape(snew,c1.shape[1])
-                time = f[keys2[0]]['Time'].value[buff:]
+                if postbuff is not None:                  
+                    time = f[keys2[0]]['Time'].value[prebuff:-postbuff]
+                else:
+                    time = f[keys2[0]]['Time'].value[prebuff:]
+    
                 if dtime:
                     d = np.array([datetime.fromtimestamp(t-3600.) for t in time])
                 else:
                     d = np.array(time)
 
                 dates = np.append(dates,d)
+    # Sort dates
+    dates = np.array(dates)
+    dates = np.sort(dates)
 
     # All done
-    return np.array(dates),np.array(Cps),np.array(Cpc)
+    return dates,np.array(Cps),np.array(Cpc)
 
 # ----------------------------------------------------------------------------------------------
 def mergeH5results(paf,outfile,templates='all', mode='normal'):
@@ -155,7 +175,7 @@ def mergeH5results(paf,outfile,templates='all', mode='normal'):
         print('Template {:03d}'.format(T))
         key='{:03d}'.format(T)
         # Read results
-        d,Cps,Cpc = readH5results(T,paf,days='all',buff=0,dtime=False,mode=mode)
+        d,Cps,Cpc = readH5results(T,paf,days='all',dtime=False,mode=mode)
         
         # If first template, create time vector dataset
         if T==TEMPLATES[0]:
@@ -301,7 +321,7 @@ def averagedplot(dates,Cps,Cpc,window,tremors=None,axs=None,label=None):
 
 
 # ----------------------------------------------------------------------------------------------
-def getmaxcp(dates,Cps,Cpc,window,wlen=0.):
+def getmaxcp(dates,Cps,Cpc,window,wlen=0.,mean=False):
     '''
     For a given time window, get the maximum phase coherence value
     Args:
@@ -345,11 +365,20 @@ def getmaxcp(dates,Cps,Cpc,window,wlen=0.):
 
         # Check if several Cp value for same time (i.e. interp mode)
         if len(Cps.shape)==1:        
-            mCpc.append(np.nanmax(Cpc[ix]))
-            mCps.append(np.nanmax(Cps[ix]))
+            if mean:
+                mCpc.append(np.nanmean(Cpc[ix]))
+                mCps.append(np.nanmean(Cps[ix]))
+            else:
+                mCpc.append(np.nanmax(Cpc[ix]))
+                mCps.append(np.nanmax(Cps[ix]))
         else:
-            ds = [np.nanmax(Cps[ix,k]) for k in range(Cps.shape[1])]
-            dc = [np.nanmax(Cpc[ix,k]) for k in range(Cpc.shape[1])]
+            if mean:
+                ds = [np.nanmean(Cps[ix,k]) for k in range(Cps.shape[1])]
+                dc = [np.nanmean(Cpc[ix,k]) for k in range(Cpc.shape[1])]
+            else:
+                ds = [np.nanmax(Cps[ix,k]) for k in range(Cps.shape[1])]
+                dc = [np.nanmax(Cpc[ix,k]) for k in range(Cpc.shape[1])]
+
             mCps.append(ds)
             mCpc.append(dc)
 
