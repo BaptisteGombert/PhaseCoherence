@@ -143,12 +143,20 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                     d = np.array(time)
 
                 dates = np.append(dates,d)
-    # Sort dates
+
+    # Make arrays
     dates = np.array(dates)
-    dates = np.sort(dates)
+    Cps = np.array(Cps)
+    Cpc = np.array(Cpc)
+
+    # Sort dates
+    ix = np.argsort(dates)
+    dates = dates[ix]
+    Cps   = Cps[ix]
+    Cpc   = Cpc[ix]    
 
     # All done
-    return dates,np.array(Cps),np.array(Cpc)
+    return dates,Cps,Cpc
 
 # ----------------------------------------------------------------------------------------------
 def mergeH5results(paf,outfile,templates='all', mode='normal'):
