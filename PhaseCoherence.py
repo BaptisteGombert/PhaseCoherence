@@ -649,7 +649,7 @@ class PhaseCoherence(object):
 
                 if sum(ii)>1:
                     # average without taking absolute value (Phase walkout???)
-                    Rstati=np.sum(xc[:,:,ii],axis=2).reshape([Nf,Nt])
+                    Rstati=np.nansum(xc[:,:,ii],axis=2).reshape([Nf,Nt])
 
                     # and find amplitude of this vector
                     Rstati=np.abs(Rstati)
