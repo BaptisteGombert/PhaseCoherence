@@ -159,7 +159,7 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
     return dates,Cps,Cpc
 
 # ----------------------------------------------------------------------------------------------
-def mergeH5results(paf,outfile,templates='all', mode='normal'):
+def mergeH5results(paf,outfile,templates='all', mode='normal',days='all'):
     '''
     Merge files from different times into a single bigass h5py file
     Args:
@@ -183,7 +183,7 @@ def mergeH5results(paf,outfile,templates='all', mode='normal'):
         print('Template {:03d}'.format(T))
         key='{:03d}'.format(T)
         # Read results
-        d,Cps,Cpc = readH5results(T,paf,days='all',dtime=False,mode=mode)
+        d,Cps,Cpc = readH5results(T,paf,days=days,dtime=False,mode=mode)
         
         # If first template, create time vector dataset
         if T==TEMPLATES[0]:
