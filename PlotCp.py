@@ -159,7 +159,7 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
     return dates,Cps,Cpc
 
 # ----------------------------------------------------------------------------------------------
-def mergeH5results(paf,outfile,templates='all', mode='normal',days='all'):
+def mergeH5results(paf,outfile,templates='all', mode='normal',days='all',ind=None):
     '''
     Merge files from different times into a single bigass h5py file
     Args:
@@ -190,9 +190,13 @@ def mergeH5results(paf,outfile,templates='all', mode='normal',days='all'):
             out.create_dataset('Time',data=np.array(d))
     
         out.create_group(key)
-        out[key].create_dataset('CpS',data=Cps)
-        out[key].create_dataset('CpC',data=Cpc)
-        
+        if ind is None:
+            out[key].create_dataset('CpS',data=Cps)
+            out[key].create_dataset('CpC',data=Cpc)
+        else:
+            out[key].create_dataset('CpS',data=Cps[:,ind])
+            out[key].create_dataset('CpC',data=Cpc[:,ind])
+
     out.close()
     
     # All done
