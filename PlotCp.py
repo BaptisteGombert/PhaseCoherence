@@ -193,9 +193,12 @@ def mergeH5results(paf,outfile,templates='all', mode='normal',days='all',ind=Non
         if ind is None:
             out[key].create_dataset('CpS',data=Cps)
             out[key].create_dataset('CpC',data=Cpc)
-        else:
+        elif type(ind)==int:
             out[key].create_dataset('CpS',data=Cps[:,ind])
             out[key].create_dataset('CpC',data=Cpc[:,ind])
+        elif type(ind)==dict:
+            out[key].create_dataset('CpS',data=Cps[:,ind[key]])
+            out[key].create_dataset('CpC',data=Cpc[:,ind[key]])
 
     out.close()
     
