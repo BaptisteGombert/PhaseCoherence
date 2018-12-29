@@ -585,8 +585,8 @@ def detection(dates,Cps,Cpc,window,thres,std=None):
 
         # Check if several Cp value for same time (i.e. interp mode)
         if len(Cps.shape)==1:
-            mCps.append(len(np.where(Cps[ix,:]>=thres*stds)[0]))
-            mCpc.append(len(np.where(Cpc[ix,:]>=thres*stdc)[0]))
+            mCps.append(len(np.where(Cps[ix]>=thres*stds)[0]))
+            mCpc.append(len(np.where(Cpc[ix]>=thres*stdc)[0]))
         else:
             ds = [len(np.where(Cps[ix,k]>=thres*stds[k])[0]) for k in range(Cps.shape[1])]
             dc = [len(np.where(Cpc[ix,k]>=thres*stdc[k])[0]) for k in range(Cpc.shape[1])]
@@ -723,7 +723,7 @@ def cumulativedetection(dates,Cps,Cpc,window,thres,tremors=None,nt=None,axs=None
     return [fig,ax1,ax2]
 
 # ----------------------------------------------------------------------------------------------
-def getstd(paf,template='all'):
+def getstd(paf,template='all',paf='./',days='all',buff=0,mode='normal'):
     '''
     get STD of PC results
     Args:
@@ -739,7 +739,7 @@ def getstd(paf,template='all'):
     
     if template is not 'all':
         for T in template:
-            _,tCps,tCpc = readresults(int(T),'./',buff=0)          
+            _,tCps,tCpc = readH5results(int(T),paf,days=days,dtime=True,prebuff=buff,postbuff=buff,mode=mode)
             Cps = np.append(Cps,tCps)
             Cpc = np.append(Cpc,tCpc)
 
@@ -751,7 +751,7 @@ def getstd(paf,template='all'):
         TEMPLATES = np.array(TEMPLATES)
 
         for T in TEMPLATES:
-            _,tCps,tCpc = readresults(int(T),'./',buff=0)          
+            _,tCps,tCpc = readH5results(int(T),paf,days=days,dtime=True,prebuff=buff,postbuff=buff,mode=mode)                      
             Cps = np.append(Cps,tCps)
             Cpc = np.append(Cpc,tCpc)
 
