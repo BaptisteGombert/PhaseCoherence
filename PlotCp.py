@@ -10,6 +10,8 @@ import readTRbostock
 import code
 import h5py
 import glob
+import pytz
+
 
 def readresults(NTEMPLATE,paf,NHOURS=550,buff=20,form=None):
     '''
@@ -55,6 +57,7 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
 
     # get shortcut
     from datetime import datetime
+    utc=pytz.timezone('UTC')
 
     # Get day sof interests
     if days is 'all':
@@ -100,9 +103,14 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                     time = f[k]['Time'].value[prebuff:] 
         
                 if dtime:
-                    d = [datetime.fromtimestamp(t-3600.) for t in time]
+                    #d = [datetime.fromtimestamp(t-3600.) for t in time]
+                    d = [datetime.fromtimestamp(t) for t in time]
                 else:
-                    d = np.array(time-3600.)
+                    #d = np.array(time-3600.)
+                    d = np.array(time)
+
+                # Convert to UTM
+                d = d.astimezone(utc)
                 dates = np.append(dates,d)
             
                 # Get phase coheremce           
@@ -138,7 +146,8 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                     time = f[keys2[0]]['Time'].value[prebuff:]
     
                 if dtime:
-                    d = np.array([datetime.fromtimestamp(t-3600.) for t in time])
+                    #d = np.array([datetime.fromtimestamp(t-3600.).astimezone(utc) for t in time])
+                    d = np.array([datetime.fromtimestamp(t).astimezone(utc) for t in time])
                 else:
                     d = np.array(time)
 
@@ -334,7 +343,60 @@ def averagedplot(dates,Cps,Cpc,window,tremors=None,axs=None,label=None):
 
     return [fig,ax1,ax2]
 
+# ----------------------------------------------------------------------------------------------
+def data_vs_Cp(dates,Cp,data,t1,t2,tremors=None):
+    '''
+    Make a plot with data on top and Cp at bottom
+    Args:
+        * dates, Cp : matrics gron readresults() or readH5results()
+        * data      : obspy trace or list ['station','channel']
+        * t1        : starting date 
+        * t2        : ending date 
+        * tremors   : dates from bostock catalogue [OPT]
+    '''
 
+    # Set timezone info
+    utc = pytz.UTC
+    t1d = t1.datetime
+    t2d = t2.datetime
+    t1d = t1d.replace(tzinfo=utc)
+    t2d = t2d.replace(tzinfo=utc)
+
+    # Create figure
+    fig = plt.figure()
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212,sharex=ax1)
+
+
+    # Plot tremors if provided
+    if tremors is not None:
+        ix = np.where((tremors>=t1)&(tremors<=t2))[0]
+        [ax1.axvline(d,c='r',lw=0.8) for d in tremors[ix]]
+        [ax2.axvline(d,c='r',lw=0.8) for d in tremors[ix]]
+
+
+    # Plot results
+    if type(data) is list:
+        S = readdata(t1,t2+3600.)
+        d = S.select(station=data[0],channel=data[1])
+        data = d[0]
+    data.trim(t1,t2)
+    t = np.arange(data.stats.starttime.datetime,data.stats.endtime+data.stats.delta,datetime.timedelta(seconds=data.stats.delta))
+    ax1.plot_date(t,data.data,'k-',lw=0.2)
+
+    # plot Cp
+    ixcp = np.where((dates>=t1d)&(dates<=t2d))[0]
+    ax2.plot_date(dates[ixcp],Cp[ixcp],'k-',lw=1) 
+
+    # Some cosmetics
+    ax1.set_ylabel('Counts')
+    ax2.set_ylabel('Cp')
+    ax2.set_xlabel('Time')
+
+    fig.tight_layout()
+    
+    return
+    
 # ----------------------------------------------------------------------------------------------
 def getmaxcp(dates,Cps,Cpc,window,wlen=0.,mean=False):
     '''
@@ -723,7 +785,7 @@ def cumulativedetection(dates,Cps,Cpc,window,thres,tremors=None,nt=None,axs=None
     return [fig,ax1,ax2]
 
 # ----------------------------------------------------------------------------------------------
-def getstd(paf,template='all',paf='./',days='all',buff=0,mode='normal'):
+def getstd(template='all',paf='./',days='all',buff=0,mode='normal'):
     '''
     get STD of PC results
     Args:
