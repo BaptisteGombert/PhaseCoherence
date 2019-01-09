@@ -104,13 +104,11 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
         
                 if dtime:
                     #d = [datetime.fromtimestamp(t-3600.) for t in time]
-                    d = [datetime.fromtimestamp(t) for t in time]
+                    d = np.array([datetime.fromtimestamp(t).astimezone(utc) for t in time])
                 else:
                     #d = np.array(time-3600.)
                     d = np.array(time)
 
-                # Convert to UTM
-                d = d.astimezone(utc)
                 dates = np.append(dates,d)
             
                 # Get phase coheremce           
