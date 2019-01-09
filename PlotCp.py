@@ -106,7 +106,6 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                     #d = [datetime.fromtimestamp(t-3600.) for t in time]
                     d = np.array([datetime.fromtimestamp(t).astimezone(utc) for t in time])
                 else:
-                    #d = np.array(time-3600.)
                     d = np.array(time)
 
                 dates = np.append(dates,d)
@@ -118,6 +117,7 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                 else:
                     Cps.append(f[k]['CpS'].value[prebuff:]) 
                     Cpc.append(f[k]['CpC'].value[prebuff:]) 
+            f.close()
 
 
         elif len(keys[0].split('.'))==3: # If on interp mode: H{}.T{}.P{}
@@ -150,11 +150,16 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                     d = np.array(time)
 
                 dates = np.append(dates,d)
-
+            f.close()
+                    
     # Make arrays
     dates = np.array(dates)
-    Cps = np.array(Cps)
-    Cpc = np.array(Cpc)
+    if len(keys[0].split('.'))==3:
+        Cps = np.array(Cps)
+        Cpc = np.array(Cpc)
+    else:
+        Cpc = np.array(Cpc).reshape(np.array(Cpc).size)
+        Cps = np.array(Cps).reshape(np.array(Cps).size)
 
     # Sort dates
     ix = np.argsort(dates)
