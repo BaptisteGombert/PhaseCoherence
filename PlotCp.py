@@ -253,7 +253,7 @@ def simpleplot(dates,Cps,Cpc,tremors=None,axs=None,label=None):
         ax1,ax2 = axs
         fig = ax1.get_figure()
 
-    p=ax1.plot_date(dates,Cpc,'-',lw=0.5)
+    p=ax1.plot_date(dates,Cpc,'-',lw=0.5,label=label)
     xlims = ax1.get_xlim() # Get xlim
     ax1.set_ylabel('Cp comp')
     if tremors is not None:
