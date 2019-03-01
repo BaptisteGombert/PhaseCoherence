@@ -39,7 +39,8 @@ def readresults(NTEMPLATE,paf,NHOURS=550,buff=20,form=None):
     return dates,Cps,Cpc
 
 # ----------------------------------------------------------------------------------------------
-def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mode='normal'):
+def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mode='normal',\
+                  fidformat='DAY.{:02d}*.h5'):
 
     '''
     Read phase coherence results in paf stored in h5py files
@@ -81,9 +82,9 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
     # Get files
     files = []
     for d in days:
-        fpaf = os.path.join(paf,'DAY.{:02d}*.h5'.format(d))
+        fpaf = os.path.join(paf,fidformat.format(d))
         files.append(glob.glob(fpaf))
-
+    
     # Flatten list 
     files = [item for sub in files for item in sub]
     files.sort() # sort
@@ -167,6 +168,60 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
     Cps   = Cps[ix]
     Cpc   = Cpc[ix]    
 
+    # All done
+    return dates,Cps,Cpc
+
+# ----------------------------------------------------------------------------------------------
+def readmergedH5(NTEMPLATE,resfile,dtime=True,prebuff=0,postbuff=0.,mode='normal'):
+    '''
+    Read results from a file which been constructed by mergeH5results()
+    Args :
+            * NTEMPLATE: Template to be read
+            * resfile  : Where file is
+            * dtime    : If True (default), return an array of datetime objects. Else timestamp
+            * buff     : Remove data at the beginning of each hour (default=0)
+            * mode     : Type of h5 structure: 'normal' or 'interp'
+
+    Returns :
+            * dates,Cps,Cpc
+    '''
+
+    # Get UTC timezone
+    utc=pytz.timezone('UTC')
+
+    key = '{:03d}'.format(NTEMPLATE)
+    with h5py.File(resfile,'r') as fid:
+        Cps = fid[key]['CpS'].value
+        Cpc = fid[key]['CpC'].value
+        ts  = fid['Time'].value
+
+    if dtime:
+        dates = np.array([datetime.datetime.fromtimestamp(t).astimezone(utc) for t in ts])
+    else:
+        dates = np.array(ts)
+
+    # Remove buffer
+    t0 = dates[0]
+    ixs = []
+    while t0<dates[-1]:
+        ix = [np.where(dates==t0)[0][0]+t for t in range(-postbuff,prebuff)]
+        ixs.append(ix)
+        t0 += datetime.timedelta(hours=1)
+
+    ixs = np.array(ixs)
+    ixs = ixs.reshape(ixs.size)
+    val = np.ones(dates.shape,dtype='bool')
+    val[ixs]=False
+
+    if mode=='interp':
+        Cps = Cps[val,:]
+        Cpc = Cpc[val,:]
+    else:
+        Cps[~val] = np.nan
+        Cpc[~val] = np.nan
+
+    #dates = dates[val]
+    
     # All done
     return dates,Cps,Cpc
 
