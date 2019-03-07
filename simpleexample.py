@@ -114,5 +114,10 @@ if __name__ == '__main__':
 
     # Compute PC
     P,t   = computePC(T,D,wintemp,buftemp,tlook,wlenlook,blim,None,shifts,None)
-   
+    
+    '''
+    Results are stored in a dictionnary
+    P.Cp['Cpstat'] for inter-station phase coherence
+    P.Cp['Cpcomp'] for inter-component phase coherence
+    '''
 
