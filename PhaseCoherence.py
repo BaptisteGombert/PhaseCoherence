@@ -19,7 +19,7 @@ import obspy
 import spectrum
 
 # Import J. personnal modules
-import general
+# import general # NOW UNUSED
 
 
 class PhaseCoherence(object):
@@ -932,7 +932,7 @@ class PhaseCoherence(object):
         shcalc = dict((nsci,np.array([0.])) for nsci in nsc)
         for ky in shcalc.keys():
             shtry[ky] = np.atleast_1d(shtry[ky])
-            vl = general.minmax(shtry[ky])
+            vl = self._minmax(shtry[ky])
             nvl = int(np.ceil(np.diff(vl)[0]/shgrid))
             nvl = np.maximum(nvl,1)
             shcalc[ky] = np.linspace(vl[0],vl[1],nvl)
@@ -952,5 +952,18 @@ class PhaseCoherence(object):
         # All done
         return shcalc, ishfs
 
+    # -------------------------------------------------------------------------------        
+    def _minmax(self,x,bfr=1.):
+        """
+        :param      x:   set of values
+        :param    bfr:   how much to multiply the limits by (default: 1.)
+        :return   lms:   limits
+        """
 
+        # minmax
+        lms = np.array([np.min(x),np.max(x)])
 
+        if bfr!=1.:
+            lms = np.mean(lms)+np.diff(lms)[0]*bfr*np.array([-.5,.5])
+
+        return lms
