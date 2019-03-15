@@ -41,7 +41,7 @@ def computePC(template,data,wintemp,buftemp,tlook,wlenlook,blim,reftemp,shifts,r
     tap = np.hamming(Mw).reshape(Mw,1)
     
     # Taper firtst cross-correlation 
-    P.taperCrosscorr(taper=tap,norm=norm)
+    P.taperCrosscorr(taper=tap)
 
     # Compute phase coherence
     P.computeCp()
