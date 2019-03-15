@@ -55,9 +55,6 @@ def computePC(template,data,wintemp,buftemp,tlook,wlenlook,blim,reftemp,shifts,r
 ##########################################################################################################
 if __name__ == '__main__':
 
-    # NTEMPLATE 
-    NT = 47
-    
     # Define dates of interests
     t1 = obspy.UTCDateTime(2010,8,20,1,0)
     t2 = obspy.UTCDateTime(2010,8,20,2,0)
