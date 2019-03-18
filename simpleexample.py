@@ -10,7 +10,6 @@ import sys
 
 # Import internals
 import PhaseCoherence as PC
-from CascadiaUtils import *
 
 
 ##########################################################################################################
