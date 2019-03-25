@@ -402,6 +402,56 @@ def averagedplot(dates,Cps,Cpc,window,tremors=None,axs=None,label=None):
     return [fig,ax1,ax2]
 
 # ----------------------------------------------------------------------------------------------
+def strain_vs_Cp(dates,Cp,S,t1,t2,tremors=None):
+    '''
+    Make a plot with data on top and Cp at bottom
+    Args:
+        * dates, Cp : matrics gron readresults() or readH5results()
+        * S         : obspy trace or list ['station','channel']
+        * t1        : starting date 
+        * t2        : ending date 
+        * tremors   : dates from bostock catalogue [OPT]
+    '''
+
+    # Check something
+    assert(type(S) is obspy.Stream),'3rd arg must be a obspy Stream of data'
+
+    # Get time of straindata
+    t = np.array([ti.datetime for ti in S[0].times(type='datetime')])
+
+    # Make figure
+    fig = plt.figure()
+    ax1 = fig.add_subplot(211)
+    axs = []
+    for i in range(len(S)):
+        axs.append(ax1.twinx())
+
+    # Plot tremors if provided
+    if tremors is not None:
+        ix = np.where((tremors>=dates[0])&(tremors<=dates[-1]))[0]
+        [ax1.axvline(d,c='r',lw=0.8) for d in tremors[ix]]
+
+    # Plot Cp
+    ax2.plot_date(dates,Cp,'k-',lw=1) 
+
+
+    # Plot strain data
+    k = 0
+    c = ['r','orange','m']
+    for ax,tr in zip(axs,S):
+        ax.plot_date(t,tr.data,'-',c=c[k]
+        k += 1
+
+    # Some cosmetics
+    ax1.set_ylabel('Cp')
+    ax1.set_xlabel('Time')
+
+    fig.tight_layout()
+
+    # All done
+    return
+
+# ----------------------------------------------------------------------------------------------
 def data_vs_Cp(dates,Cp,data,t1,t2,tremors=None):
     '''
     Make a plot with data on top and Cp at bottom
