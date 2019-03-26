@@ -9,7 +9,8 @@ import glob
 import pytz
 
 # Import internals
-from Cppostproc import *
+from CascadiaUtils import readdata
+from .Cppostproc import detection  
 
 # ----------------------------------------------------------------------------------------------
 def simpleplot(dates,Cps,Cpc,tremors=None,axs=None,label=None):
@@ -374,9 +375,6 @@ def slidingwin(dates,Cps,Cpc,Np,tremors=None,axs=None,label=None):
 def running_mean(x, N):
     cumsum = np.nancumsum(np.insert(x, 0, 0)) 
     return (cumsum[N:] - cumsum[:-N]) / float(N)
-
-
-
 
 
 # ----------------------------------------------------------------------------------------------
