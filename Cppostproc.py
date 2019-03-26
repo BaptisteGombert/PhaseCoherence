@@ -463,3 +463,67 @@ def getstd(template='all',paf='./',days='all',buff=0,mode='normal'):
 
     # All done
     return stds,stdc
+
+# ----------------------------------------------------------------------------------------------
+def getpeaks(Cp,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
+    '''
+    Get peaks of Cp results using scipy.signal.find_peaks()
+    Return indices of peaks and dictionnary of peaks properties
+    
+    Args :
+            * Cp          : Phase-coherence time-serie
+            * width       : Width of peak used for detection (in # of samples)
+            * prominence  : prominence of peak used for detection
+            * height      : Minimum threshold used to fin peaks (any peaks with 
+                            max Cp value under this will be discarded. Def=None
+            * stdthres    : if height is None, it will be set to stdthres*std (def=2.5)
+            * win         : width of sliding window used to smooth Cp before peak detection (def=10)
+   
+   Return :
+            * p      : indices of peaks
+            * pmax   : indices of max value of peaks (can be diff to p due to smoothing effect)
+            * prop   : dictionnary containing peak properties (i.e. width, prominence, bounds, etc...)
+    '''
+    
+    # Import scipy functions that does all the heavy lifting
+    from scipy.signal import find_peaks 
+    
+    # Import internal running_mean func
+    from .PlotCp import running_mean
+
+    # Get height value if not given
+    if height is None:
+        std   = np.nanstd(Cp[:20000]) # noise level before ETS
+        mean  = np.nanmean(Cp[:20000]) # average Cp value
+        height = mean + std*stdthres # get height value to feed to find_peaks
+
+    # Smooth Cp for more accurate peak detection
+    if win%2==0: # Make window odd number of simple for later simplicity (<== Baptiste doesn't know how to code)
+        win+=1
+    aCp = running_mean(Cp,win)
+    # Make it the same length as original vector
+    tmp = np.zeros(Cp.shape)
+    tmp[int(win/2):int(win/2)+len(aCp)] = aCp
+    aCp = tmp
+
+    # Find peaks
+    p,prop = find_peaks(aCp,width=width,prominence=prominence,height=height)
+
+    # Find indices of the bounds of eahc peak and its max value
+    bounds  = np.zeros((len(prop['right_ips']),2),dtype=int)
+    peakval = np.zeros((len(p))) # Maximum of peaks
+    pmax    = np.zeros((len(p)),dtype=int) # Argument of maximum value of each peak
+    
+    for k in range(len(bounds)): # loop on each peak
+        l = prop['left_ips'][k] # left bound
+        r = prop['right_ips'][k] # right bound
+        bounds[k,0] = int(np.floor(l)) 
+        bounds[k,1] = int(np.ceil(r)) 
+        peakval[k] = np.nanmax(Cp[bounds[k,0]:bounds[k,1]])
+        pmax[k] = np.nanargmax(Cp[bounds[k,0]:bounds[k,1]])+bounds[k,0]
+    prop['bounds'] = bounds # store it
+    prop['peakvals'] = peakval # store it
+
+    # All done
+    return p,pmax,prop
+
