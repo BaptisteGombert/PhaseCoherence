@@ -1,8 +1,7 @@
 ''' 
 A base class to perform Phase Coherence analysis 
 
-Original code from J. Hawthorne (Hawthorne and Ampuero 2017)
-Transformed into class by B. Gombert (May 2018)
+NOW USED FOR TEST-DEV PURPOSES ONLY - DO NOT USE FOR CP ANALYSIS
 
 '''
 
