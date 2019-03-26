@@ -11,7 +11,7 @@ import code
 import h5py
 import glob
 import pytz
-
+import obspy
 
 def readresults(NTEMPLATE,paf,NHOURS=550,buff=20,form=None):
     '''
@@ -402,7 +402,7 @@ def averagedplot(dates,Cps,Cpc,window,tremors=None,axs=None,label=None):
     return [fig,ax1,ax2]
 
 # ----------------------------------------------------------------------------------------------
-def strain_vs_Cp(dates,Cp,S,t1,t2,tremors=None):
+def strain_vs_Cp(dates,Cp,S,t1=None,t2=None,tremors=None):
     '''
     Make a plot with data on top and Cp at bottom
     Args:
@@ -415,15 +415,30 @@ def strain_vs_Cp(dates,Cp,S,t1,t2,tremors=None):
 
     # Check something
     assert(type(S) is obspy.Stream),'3rd arg must be a obspy Stream of data'
+    
+    # Copy strain data for just for
+    S2 = S.copy()
+
+    if t1 is not None:
+        # Set timezone info
+        utc = pytz.UTC
+        t1d = t1.datetime
+        t2d = t2.datetime
+        t1d = t1d.replace(tzinfo=utc)
+        t2d = t2d.replace(tzinfo=utc)
+        ixcp = np.where((dates>=t1d)&(dates<=t2d))[0]
+        dates = dates[ixcp]
+        Cp = Cp[ixcp]
+        S2.trim(t1,t2)
 
     # Get time of straindata
-    t = np.array([ti.datetime for ti in S[0].times(type='datetime')])
+    t = np.array([ti.datetime for ti in S2[0].times(type='utcdatetime')])
 
     # Make figure
     fig = plt.figure()
-    ax1 = fig.add_subplot(211)
+    ax1 = fig.add_subplot(111)
     axs = []
-    for i in range(len(S)):
+    for i in range(len(S2)):
         axs.append(ax1.twinx())
 
     # Plot tremors if provided
@@ -431,21 +446,21 @@ def strain_vs_Cp(dates,Cp,S,t1,t2,tremors=None):
         ix = np.where((tremors>=dates[0])&(tremors<=dates[-1]))[0]
         [ax1.axvline(d,c='r',lw=0.8) for d in tremors[ix]]
 
-    # Plot Cp
-    ax2.plot_date(dates,Cp,'k-',lw=1) 
-
-
     # Plot strain data
     k = 0
     c = ['r','orange','m']
-    for ax,tr in zip(axs,S):
-        ax.plot_date(t,tr.data,'-',c=c[k]
+    for ax,tr in zip(axs,S2):
+        ax.plot_date(t,tr.data,'-',c=c[k],label=tr.stats.channel)
         k += 1
+
+    # Plot Cp
+    ax1.plot_date(dates,Cp,'k-',lw=2) 
 
     # Some cosmetics
     ax1.set_ylabel('Cp')
     ax1.set_xlabel('Time')
-
+    ax1.set_zorder(axs[-1].get_zorder()+1)
+    ax1.patch.set_visible(False)
     fig.tight_layout()
 
     # All done
