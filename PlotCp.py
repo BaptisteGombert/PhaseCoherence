@@ -7,6 +7,7 @@ from matplotlib.dates import date2num,DateFormatter
 import readTRbostock
 import glob
 import pytz
+import obspy 
 
 # Import internals
 from CascadiaUtils import readdata
