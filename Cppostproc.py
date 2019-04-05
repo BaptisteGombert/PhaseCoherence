@@ -96,9 +96,9 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
             for k in keys: # For each hour
                 if postbuff is not None: 
                     # Get time
-                    time = f[k]['Time'].value[prebuff:-postbuff] 
+                    time = f[k]['Time'].value[()][prebuff:-postbuff] 
                 else:
-                    time = f[k]['Time'].value[prebuff:] 
+                    time = f[k]['Time'].value[()][prebuff:] 
         
                 if dtime:
                     #d = [datetime.fromtimestamp(t-3600.) for t in time]
@@ -110,11 +110,11 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
             
                 # Get phase coheremce           
                 if postbuff is not None: 
-                    Cps.append(f[k]['CpS'].value[prebuff:-postbuff]) #= np.append(Cps,f[k]['CpS'].value[buff:])
-                    Cpc.append(f[k]['CpC'].value[prebuff:-postbuff]) #= np.append(Cpc,f[k]['CpC'].value[buff:])
+                    Cps.append(f[k]['CpS'][()][prebuff:-postbuff]) #= np.append(Cps,f[k]['CpS'].value[buff:])
+                    Cpc.append(f[k]['CpC'][()][prebuff:-postbuff]) #= np.append(Cpc,f[k]['CpC'].value[buff:])
                 else:
-                    Cps.append(f[k]['CpS'].value[prebuff:]) 
-                    Cpc.append(f[k]['CpC'].value[prebuff:]) 
+                    Cps.append(f[k]['CpS'][()][prebuff:]) 
+                    Cpc.append(f[k]['CpC'][()][prebuff:]) 
             f.close()
 
 
@@ -126,20 +126,20 @@ def readH5results(NTEMPLATE,paf,days='all',dtime=True,prebuff=0,postbuff=None,mo
                 keys2 = [s for s in list(keys) if 'H{:02d}'.format(h) in s] 
                 # Get phase coheremce          
                 if postbuff is not None:                  
-                    c1 =  np.array([f[k2]['CpS'].value[prebuff:-postbuff] for k2 in keys2]).T
-                    c2 =  np.array([f[k2]['CpC'].value[prebuff:-postbuff] for k2 in keys2]).T
+                    c1 =  np.array([f[k2]['CpS'][()][prebuff:-postbuff] for k2 in keys2]).T
+                    c2 =  np.array([f[k2]['CpC'][()][prebuff:-postbuff] for k2 in keys2]).T
                 else:
-                    c1 =  np.array([f[k2]['CpS'].value[prebuff:] for k2 in keys2]).T
-                    c2 =  np.array([f[k2]['CpC'].value[prebuff:] for k2 in keys2]).T
+                    c1 =  np.array([f[k2]['CpS'][()][prebuff:] for k2 in keys2]).T
+                    c2 =  np.array([f[k2]['CpC'][()][prebuff:] for k2 in keys2]).T
 
                 # Get size
                 snew=Cps.shape[0]+len(c1)
                 Cps = np.append(Cps,c1).reshape(snew,c1.shape[1])
                 Cpc = np.append(Cpc,c2).reshape(snew,c1.shape[1])
                 if postbuff is not None:                  
-                    time = f[keys2[0]]['Time'].value[prebuff:-postbuff]
+                    time = f[keys2[0]]['Time'][()][prebuff:-postbuff]
                 else:
-                    time = f[keys2[0]]['Time'].value[prebuff:]
+                    time = f[keys2[0]]['Time'][()][prebuff:]
     
                 if dtime:
                     #d = np.array([datetime.fromtimestamp(t-3600.).astimezone(utc) for t in time])
@@ -188,9 +188,9 @@ def readmergedH5(NTEMPLATE,resfile,dtime=True,prebuff=0,postbuff=0.,mode='normal
 
     key = '{:03d}'.format(NTEMPLATE)
     with h5py.File(resfile,'r') as fid:
-        Cps = fid[key]['CpS'].value
-        Cpc = fid[key]['CpC'].value
-        ts  = fid['Time'].value
+        Cps = fid[key]['CpS'][()]
+        Cpc = fid[key]['CpC'][()]
+        ts  = fid['Time'][()]
 
     if dtime:
         dates = np.array([datetime.datetime.fromtimestamp(t).astimezone(utc) for t in ts])
