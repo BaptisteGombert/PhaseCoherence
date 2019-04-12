@@ -10,6 +10,9 @@ import glob
 import pytz
 import obspy
 
+# Import internals
+import readTRbostock
+
 def readresults(NTEMPLATE,paf,NHOURS=550,buff=20,form=None):
     '''
     Read phase coherence results in paf

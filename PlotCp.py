@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 from matplotlib.dates import date2num,DateFormatter
-import readTRbostock
 import glob
 import pytz
 import obspy 
