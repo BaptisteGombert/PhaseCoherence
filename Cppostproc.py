@@ -530,3 +530,128 @@ def getpeaks(Cp,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
     # All done
     return p,pmax,prop
 
+
+# ----------------------------------------------------------------------------------------------
+def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
+    '''
+    Get and compile "detection" stats returned by find_peaks
+    How many peaks? How long?
+    Args:  
+        [MANDATORY]
+            * TEMPLATES    : list (or array) or int of LFE to use
+            * h5file       : Result file
+        [OPT]
+            * width       : Width of peak used for detection (in # of samples)
+            * prominence  : prominence of peak used for detection
+            * height      : Minimum threshold used to fin peaks (any peaks with 
+                            max Cp value under this will be discarded. Def=None
+            * stdthres    : if height is None, it will be set to stdthres*std (def=2.5)
+            * win         : width of sliding window used to smooth Cp before peak detection (def=10)
+    '''
+    
+    import pdb
+
+    # Transform into lists
+    if type(TEMPLATES) is int:
+        TEMPLATES = [TEMPLATES]
+    if type(width) is not list:
+        width = [width]
+    l1 = len(width) 
+    if type(prominence) is not list:
+        prominence = [prominence]
+    l2 = len(prominence)
+    if type(height) is not list:
+        height = [height] 
+    l3 = len(height)
+    if type(stdthres) is not list:
+        stdthres = [stdthres]
+    l4 = len(stdthres)
+    if type(win) is not list:
+        win = [win]       
+    l5 = len(win)
+   
+    maxlen = np.max([l1,l2,l3,l4,l5])
+    if (maxlen>1)&(not l1==l2==l3==l4==l5):
+        if len(width)<maxlen:
+            width = [width[0] for i in range(maxlen)]
+        if len(prominence)<maxlen:
+            prominence = [prominence[0] for i in range(maxlen)]
+        if len(height)<maxlen:
+            height = [height[0] for i in range(maxlen)]
+        if len(stdthres)<maxlen:
+            stdthres = [stdthres[0] for i in range(maxlen)]
+        if len(win)<maxlen:
+            win = [win[0] for i in range(maxlen)]
+
+    # Get templates
+    if TEMPLATES is 'all':
+        TEMPLATES = [1,2,3,5,6,7,10,12,15,17,19,20,21,22,23,26,30,31,32,34,36,37,38,40,41,43,45,47,49,52,53,55,58,61,62,63,65,66,68,70,74,76,78,99,101,102,113,121,125,127,132,141,142,144,145,147,152,154,156,158,159,162,176,181,191,230,231,232,233,234,240,241,242,243,244,245,246,247,248,250,251,252,253,254,255,256,257,258,259,260]+list(range(260,301))
+        # Remove that weird template 
+        TEMPLATES.remove(295)
+    TEMPLATES = np.array(TEMPLATES)
+
+    # Make empty dictionnary
+    properties = {}
+    # Loop on templates
+    for NT in TEMPLATES:
+        # Start filling dictionnary
+        key = '{:03d}'.format(NT)
+        properties[key] = {}
+        properties[key]['Cps'] = {}
+        properties[key]['Cpc'] = {}
+        properties[key]['widths'] = width
+        properties[key]['prominences'] = prominence
+        properties[key]['heights'] =  height
+        properties[key]['stdthres'] = stdthres
+        properties[key]['wins'] = win 
+        
+
+        for c in ['Cps','Cpc']:
+            properties[key][c]['Npeaks'] = []
+            properties[key][c]['durations'] = []
+            properties[key][c]['Cpmax'] = []
+
+        # Read data
+        dates,Cps,Cpc = readmergedH5(NT,h5file,prebuff=20,postbuff=20,mode='normal') 
+        dt = (dates[1]-dates[0]).seconds 
+
+        # Get peak values
+        for wid,pro,hei,std,wi in zip(width,prominence,height,stdthres,win):  
+            pc,pmaxc,propc = getpeaks(Cpc,width=wid,prominence=pro,height=hei,stdthres=std,win=wi)
+            ps,pmaxs,props = getpeaks(Cps,width=wid,prominence=pro,height=hei,stdthres=std,win=wi)
+
+            # Store results in dico
+            properties[key]['Cps']['Npeaks'].append(len(pmaxs))
+            properties[key]['Cpc']['Npeaks'].append(len(pmaxc))
+            properties[key]['Cps']['durations'].append(props['widths']*dt)
+            properties[key]['Cpc']['durations'].append(propc['widths']*dt)
+            properties[key]['Cps']['Cpmax'].append(Cps[pmaxs])
+            properties[key]['Cpc']['Cpmax'].append(Cpc[pmaxc])
+
+    Ntries = len(properties[key]['Cpc']['Npeaks']) # Hpw many parameters have been tried?
+
+    # Concatenate results
+    allevent = {}
+    allevent['Cps'] = {}
+    allevent['Cpc'] = {}
+    allevent['widths'] = width
+    allevent['prominences'] = prominence
+    allevent['heights'] =  height
+    allevent['stdthres'] = stdthres
+    allevent['wins'] = win
+    for c in ['Cps','Cpc']:
+        allevent[c]['Npeaks'] = np.zeros((Ntries))
+        allevent[c]['durations'] = [[] for p in range(Ntries)]#np.zeros((Ntries))
+        allevent[c]['Cpmax'] = [[] for p in range(Ntries)]# np.zeros((Ntries))
+    for NT in TEMPLATES:
+        key = '{:03d}'.format(NT)
+        for p in range(Ntries):
+            #pdb.set_trace()
+            allevent['Cps']['Npeaks'][p] += properties[key]['Cps']['Npeaks'][p]
+            allevent['Cpc']['Npeaks'][p] += properties[key]['Cpc']['Npeaks'][p]
+            allevent['Cps']['durations'][p] += list(properties[key]['Cps']['durations'][p])
+            allevent['Cpc']['durations'][p] += list(properties[key]['Cpc']['durations'][p])
+            allevent['Cps']['Cpmax'][p] += list(properties[key]['Cps']['Cpmax'][p])
+            allevent['Cpc']['Cpmax'][p] += list(properties[key]['Cpc']['Cpmax'][p])
+
+    return properties,allevent
