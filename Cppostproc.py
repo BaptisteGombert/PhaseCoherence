@@ -9,6 +9,7 @@ import h5py
 import glob
 import pytz
 import obspy
+import pickle
 
 # Import internals
 import readTRbostock
@@ -523,7 +524,11 @@ def getpeaks(Cp,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
         bounds[k,0] = int(np.floor(l)) 
         bounds[k,1] = int(np.ceil(r)) 
         peakval[k] = np.nanmax(Cp[bounds[k,0]:bounds[k,1]])
-        pmax[k] = np.nanargmax(Cp[bounds[k,0]:bounds[k,1]])+bounds[k,0]
+        try:
+            pmax[k] = np.nanargmax(Cp[bounds[k,0]:bounds[k,1]])+bounds[k,0]
+        except ValueError:
+            pmax[k] = p[k]
+
     prop['bounds'] = bounds # store it
     prop['peakvals'] = peakval # store it
 
@@ -532,7 +537,7 @@ def getpeaks(Cp,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
 
 
 # ----------------------------------------------------------------------------------------------
-def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=2.5,win=11):
+def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=2.5,win=11,save=False):
     '''
     Get and compile "detection" stats returned by find_peaks
     How many peaks? How long?
@@ -653,5 +658,16 @@ def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=
             allevent['Cpc']['durations'][p] += list(properties[key]['Cpc']['durations'][p])
             allevent['Cps']['Cpmax'][p] += list(properties[key]['Cps']['Cpmax'][p])
             allevent['Cpc']['Cpmax'][p] += list(properties[key]['Cpc']['Cpmax'][p])
+
+    # Save results
+    '''
+    if save:
+        f1 = prefix+'prop.pkl'
+        f2 = prefix+'allt.pkl'
+        with open(f1,'wb') as pf1:
+            pickle.dump(properties,pf1,protocol=pickle.HIGHEST_PROTOCOL)
+        with open(f2,'wb') as pf2:
+            pickle.dump(allevent,pf2,protocol=pickle.HIGHEST_PROTOCOL)
+    '''
 
     return properties,allevent
