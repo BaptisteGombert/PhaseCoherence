@@ -205,8 +205,9 @@ def readmergedH5(NTEMPLATE,resfile,dtime=True,prebuff=0,postbuff=0.,mode='normal
     t0 = dates[0]
     ixs = []
     while t0<dates[-1]:
-        ix = [np.where(dates==t0)[0][0]+t for t in range(-postbuff,prebuff)]
-        ixs.append(ix)
+        if len(np.where(dates==t0)[0])>0:
+            ix = [np.where(dates==t0)[0][0]+t for t in range(-postbuff,prebuff)]
+            ixs.append(ix)
         t0 += datetime.timedelta(hours=1)
 
     ixs = np.array(ixs)
