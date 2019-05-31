@@ -7,9 +7,11 @@ import obspy
 import os
 import copy
 import sys
+import matplotlib.pyplot as plt
+
 
 # Import internals
-import PhaseCoherence as PC
+import PhaseCoherence.PhaseCoherence as PC
 
 
 ##########################################################################################################
@@ -59,10 +61,10 @@ if __name__ == '__main__':
     t2 = obspy.UTCDateTime(2010,8,20,2,0)
 
     # frequency range
-    blim=[1,6]
+    blim=[1,10]
 
     # window for template, 
-    wintemp = [-0.2,4.8]
+    wintemp = [-0.2,7.8]
 
     # we'll buffer by buftemp on either side of the template
     # the template tapers to zero with a cosine taper within the buffer
@@ -81,9 +83,9 @@ if __name__ == '__main__':
     hpfilt=3/hpfilt
     
     # Get data waveform
-    D1 = obspy.read('path/to/your/data') 
-    D1.merge()   
-    D1.trim(t1,t2) # Select time of interest
+    D = obspy.read('path/to/your/data') 
+    D.merge()   
+    D.trim(t1,t2) # Select time of interest
      
     # Get template 
     T = obspy.read('path/to/your/template')
@@ -92,13 +94,14 @@ if __name__ == '__main__':
     shifts = {}
     lini = 99999999.
     for tr in T:
-        nid = tr.stats.network+'.'+tr.stats.station+'.'+tr.stats.channel
-        shifts[nid] = tr.stats.t0
-        if tr.stats.t0<lini:
-            lini=tr.stats.t0
+        nid = tr.stats.network+'.'+tr.stats.station+'.'+tr.stats.channel[-1]
+        shifts[nid] = tr.stats.sac['t0']
+        if tr.stats.sac['t0']<lini:
+            lini=tr.stats.sac['t0']
+        tr.stats.t0=tr.stats.sac['t0']
     # Make sure smallest time-shift is 0.
     for k in shifts.keys():
-        shifts1[k] -= lini
+        shifts[k] -= lini
 
     # Filter that 
     T.filter('bandpass',freqmin=hpfilt,freqmax=19)
@@ -110,7 +113,24 @@ if __name__ == '__main__':
 
     # Compute PC
     P,t   = computePC(T,D,wintemp,buftemp,tlook,wlenlook,blim,None,shifts,None)
+   
+    # Plot results
+    Tdates = [datetime.timedelta(seconds=tt) + D[0].stats.starttime.datetime for tt in t] 
+    Ddates = [datetime.timedelta(seconds=tt) + D[0].stats.starttime.datetime for tt in D[0].times()] 
     
+    f,ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.plot(Ddates,D[0].data,'k')
+    ax1.set_ylabel('Data (counts)')
+    ax2.plot(Tdates,P.Cp['Cpstat'],'r')
+    ax2.spines['right'].set_edgecolor('r')
+
+    ax1.set_xlabel('Time')
+    ax2.set_ylabel('Phase coherence')
+    ax2.yaxis.label.set_color('r')
+    ax2.tick_params(axis='y',colors='r')
+
+    f.savefig('Results.png',bbox_inches='tight')
     '''
     Results are stored in a dictionnary
     P.Cp['Cpstat'] for inter-station phase coherence
