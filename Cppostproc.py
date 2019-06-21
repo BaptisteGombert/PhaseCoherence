@@ -616,6 +616,7 @@ def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=
             properties[key][c]['Npeaks'] = []
             properties[key][c]['durations'] = []
             properties[key][c]['Cpmax'] = []
+            properties[key][c]['startdate'] = []
 
         # Read data
         dates,Cps,Cpc = readmergedH5(NT,h5file,prebuff=20,postbuff=20,mode='normal') 
@@ -633,8 +634,10 @@ def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=
             properties[key]['Cpc']['durations'].append(propc['widths']*dt)
             properties[key]['Cps']['Cpmax'].append(Cps[pmaxs])
             properties[key]['Cpc']['Cpmax'].append(Cpc[pmaxc])
+            properties[key]['Cps']['startdate'].append(dates[props['left_ips'].astype(int)])
+            properties[key]['Cpc']['startdate'].append(dates[propc['left_ips'].astype(int)])
 
-    Ntries = len(properties[key]['Cpc']['Npeaks']) # Hpw many parameters have been tried?
+    Ntries = len(properties[key]['Cpc']['Npeaks']) # How many parameters have been tried?
 
     # Concatenate results
     allevent = {}
@@ -649,6 +652,7 @@ def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=
         allevent[c]['Npeaks'] = np.zeros((Ntries))
         allevent[c]['durations'] = [[] for p in range(Ntries)]#np.zeros((Ntries))
         allevent[c]['Cpmax'] = [[] for p in range(Ntries)]# np.zeros((Ntries))
+        allevent[c]['startdate'] = [[] for p in range(Ntries)]# np.zeros((Ntries))
     for NT in TEMPLATES:
         key = '{:03d}'.format(NT)
         for p in range(Ntries):
@@ -659,6 +663,8 @@ def getpeakstats(TEMPLATES,h5file,width=20,prominence=0.02,height=None,stdthres=
             allevent['Cpc']['durations'][p] += list(properties[key]['Cpc']['durations'][p])
             allevent['Cps']['Cpmax'][p] += list(properties[key]['Cps']['Cpmax'][p])
             allevent['Cpc']['Cpmax'][p] += list(properties[key]['Cpc']['Cpmax'][p])
+            allevent['Cps']['startdate'][p] += list(properties[key]['Cps']['startdate'][p])
+            allevent['Cpc']['startdate'][p] += list(properties[key]['Cpc']['startdate'][p])
 
     # Save results
     '''
